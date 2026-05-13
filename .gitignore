@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+SmartExpenseTracker/data/*.db
+SmartExpenseTracker/data/*.json
+SmartExpenseTracker/charts_output/*
