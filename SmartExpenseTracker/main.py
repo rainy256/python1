@@ -8,8 +8,8 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from models import User, Expense
-from validators import validate_date, validate_amount
+from models import User, Expense, Category
+from validators import validate_date, validate_amount, parse_natural_input
 from storage import save_to_json, load_from_json
 from database import init_db, insert_expense_db, get_all_expenses_db
 from charts import plot_category_pie, plot_monthly_trend
@@ -30,6 +30,7 @@ def print_menu():
     4. 生成月度报表（图表）
     5. 设置分类预算
     6. 数据导出
+    7. 自然语言记账（说人话）
     0. 退出
     """)
 
@@ -171,6 +172,36 @@ def set_budget(user):
     print(f"✅ {cat_name} 月度预算已设为 {limit:.2f}元")
 
 
+def natural_language_flow(user):
+    print("\n--- 自然语言记账 ---")
+    print("说人话就能记账，支持相对日期和关键词分类")
+    print("示例: '昨天午饭花了35元' / '今天工资收入8000' / '5月10日买衣服花了299'")
+    text = input("请输入: ").strip()
+    if not text:
+        print("输入为空，已取消")
+        return
+
+    date, category, amount, etype = parse_natural_input(text)
+    if amount == 0:
+        print("❌ 未识别到金额，请使用 '35元' '8000块' 这样的格式")
+        return
+
+    if etype == "expense":
+        amount = abs(amount)
+    else:
+        amount = abs(amount)
+
+    if category and category not in user.categories:
+        user.add_category(Category(category))
+
+    expense = Expense(amount, category, date, text, etype)
+    user.add_expense(expense)
+    insert_expense_db(expense)
+    save_to_json(user, DATA_FILE)
+    type_label = "支出" if etype == "expense" else "收入"
+    print(f"✅ 自然语言识别成功 → {date} {category} {amount:.2f}元 ({type_label})")
+
+
 def export_data(user):
     print("\n--- 数据导出 ---")
     print("1. 导出为 JSON  2. 导出为 CSV")
@@ -195,7 +226,6 @@ def main():
     user = init_user()
     for cat in DEFAULT_CATEGORIES:
         if cat not in user.categories:
-            from models import Category
             user.add_category(Category(cat))
 
     while True:
@@ -215,6 +245,8 @@ def main():
             set_budget(user)
         elif choice == "6":
             export_data(user)
+        elif choice == "7":
+            natural_language_flow(user)
         elif choice == "0":
             print("\n再见！")
             break

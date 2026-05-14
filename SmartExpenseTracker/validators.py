@@ -48,6 +48,13 @@ def parse_natural_input(text):
 
     amount_pattern = r"(\d+(?:\.\d{1,2})?)\s*(?:元|块|块钱|万)"
     amount_match = re.search(amount_pattern, text)
+    if not amount_match:
+        bare_pattern = r"(?:花了|收入|赚了?|消费|用了|付了?|支出|到账)\s*(\d+(?:\.\d{1,2})?)(?:\s|$)"
+        amount_match = re.search(bare_pattern, text)
+    if not amount_match:
+        standalone = re.search(r"(\d+(?:\.\d{1,2})?)\s*$", text)
+        if standalone:
+            amount_match = standalone
     amount = float(amount_match.group(1)) if amount_match else 0
 
     expense_type = "expense"
@@ -66,6 +73,7 @@ def parse_natural_input(text):
         "房租": "居住", "水电": "居住", "物业": "居住",
         "医院": "医疗", "药": "医疗",
         "书": "教育", "课程": "教育", "培训": "教育",
+        "理发": "其他", "工资": "工资", "奖金": "工资", "报销": "工资",
     }
     category = "其他"
     for kw, cat in category_map.items():
