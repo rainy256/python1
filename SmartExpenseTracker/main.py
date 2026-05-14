@@ -14,6 +14,7 @@ from storage import save_to_json, load_from_json
 from database import init_db, insert_expense_db, get_all_expenses_db
 from charts import plot_category_pie, plot_monthly_trend
 from config import DEFAULT_CATEGORIES, DATA_FILE
+from anomaly import print_anomaly_report
 
 
 def print_header():
@@ -31,6 +32,7 @@ def print_menu():
     5. 设置分类预算
     6. 数据导出
     7. 自然语言记账（说人话）
+    8. 异常消费检测
     0. 退出
     """)
 
@@ -129,6 +131,8 @@ def view_category_stats(user):
     if not has_budget:
         print("未设置任何分类预算，请在菜单5中设置")
 
+    print_anomaly_report(user)
+
 
 def generate_report(user):
     print("\n--- 生成月度报表 ---")
@@ -202,6 +206,15 @@ def natural_language_flow(user):
     print(f"✅ 自然语言识别成功 → {date} {category} {amount:.2f}元 ({type_label})")
 
 
+def anomaly_check_flow(user):
+    print("\n--- 异常消费检测 ---")
+    from anomaly import run_anomaly_check
+    anomalies, new_spikes = run_anomaly_check(user)
+    has_anomaly = print_anomaly_report(user)
+    if not has_anomaly:
+        print("🎉 本月消费一切正常，未发现异常！")
+
+
 def export_data(user):
     print("\n--- 数据导出 ---")
     print("1. 导出为 JSON  2. 导出为 CSV")
@@ -247,6 +260,8 @@ def main():
             export_data(user)
         elif choice == "7":
             natural_language_flow(user)
+        elif choice == "8":
+            anomaly_check_flow(user)
         elif choice == "0":
             print("\n再见！")
             break
