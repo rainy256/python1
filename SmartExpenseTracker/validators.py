@@ -9,7 +9,23 @@ from datetime import date, timedelta
 
 def validate_date(date_str):
     pattern = r"^\d{4}-\d{2}-\d{2}$"
-    return bool(re.match(pattern, date_str))
+    if not re.match(pattern, date_str):
+        return False
+    try:
+        parts = date_str.split("-")
+        y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+        if m < 1 or m > 12 or d < 1 or d > 31:
+            return False
+        if m in (4, 6, 9, 11) and d > 30:
+            return False
+        if m == 2:
+            is_leap = (y % 4 == 0 and y % 100 != 0) or (y % 400 == 0)
+            max_d = 29 if is_leap else 28
+            if d > max_d:
+                return False
+        return True
+    except (ValueError, IndexError):
+        return False
 
 
 def validate_amount(amount_str):
@@ -68,12 +84,12 @@ def parse_natural_input(text):
         "吃饭": "餐饮", "午饭": "餐饮", "晚饭": "餐饮", "早餐": "餐饮", "外卖": "餐饮",
         "饭": "餐饮", "聚餐": "餐饮", "零食": "餐饮", "喝": "餐饮",
         "地铁": "交通", "公交": "交通", "打车": "交通", "加油": "交通", "停车": "交通",
-        "衣服": "购物", "买": "购物", "淘宝": "购物", "京东": "购物",
+        "医院": "医疗", "药": "医疗",
+        "衣服": "购物", "淘宝": "购物", "京东": "购物",
         "游戏": "娱乐", "电影": "娱乐", "KTV": "娱乐", "旅游": "娱乐",
         "房租": "居住", "水电": "居住", "物业": "居住",
-        "医院": "医疗", "药": "医疗",
         "书": "教育", "课程": "教育", "培训": "教育",
-        "理发": "其他", "工资": "工资", "奖金": "工资", "报销": "工资",
+        "工资": "工资", "奖金": "工资", "报销": "工资",
     }
     category = "其他"
     for kw, cat in category_map.items():

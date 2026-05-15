@@ -5,6 +5,7 @@
 
 import sys
 import os
+from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -46,15 +47,22 @@ def add_expense_flow(user):
     print("\n--- 记一笔账 ---")
     print("1. 支出  2. 收入")
     t = input("请选择类型: ").strip()
-    expense_type = "expense" if t == "1" else "income"
+    if t == "1":
+        expense_type = "expense"
+    elif t == "2":
+        expense_type = "income"
+    else:
+        print("无效选择，请选1或2")
+        return
 
-    date = input("日期 (YYYY-MM-DD，回车=今天): ").strip()
-    if not date:
-        from datetime import date as dt
-        date = str(dt.today())
-    elif not validate_date(date):
+    date_str = input("日期 (YYYY-MM-DD，回车=今天): ").strip()
+    if not date_str:
+        today_str = str(date.today())
+    elif not validate_date(date_str):
         print("日期格式错误！请使用 YYYY-MM-DD 格式")
         return
+    else:
+        today_str = date_str
 
     amount_str = input("金额: ").strip()
     if not validate_amount(amount_str):
@@ -73,16 +81,16 @@ def add_expense_flow(user):
 
     note = input("备注（可选）: ").strip()
 
-    expense = Expense(amount, category, date, note, expense_type)
+    expense = Expense(amount, category, today_str, note, expense_type)
     user.add_expense(expense)
     insert_expense_db(expense)
     save_to_json(user, DATA_FILE)
-    print(f"✅ 记账成功！{date} {category} {amount}元 ({expense_type})")
+    print(f"✅ 记账成功！{today_str} {category} {amount}元 ({expense_type})")
 
 
 def view_monthly_bills(user):
     print("\n--- 本月账单 ---")
-    today = __import__("datetime").date.today()
+    today = date.today()
     expenses = user.get_all_expenses_by_date(today.year, today.month)
 
     if not expenses:
@@ -102,7 +110,7 @@ def view_monthly_bills(user):
 
 def view_category_stats(user):
     print("\n--- 分类统计 ---")
-    today = __import__("datetime").date.today()
+    today = date.today()
     stats = user.get_category_stats(today.year, today.month)
 
     if not stats:
@@ -136,11 +144,18 @@ def view_category_stats(user):
 
 def generate_report(user):
     print("\n--- 生成月度报表 ---")
-    today = __import__("datetime").date.today()
+    today = date.today()
     year_str = input(f"年份 (回车={today.year}): ").strip()
     month_str = input(f"月份 (回车={today.month}): ").strip()
-    year = int(year_str) if year_str else today.year
-    month = int(month_str) if month_str else today.month
+
+    try:
+        year = int(year_str) if year_str else today.year
+        month = int(month_str) if month_str else today.month
+        if month < 1 or month > 12:
+            raise ValueError
+    except ValueError:
+        print("年份或月份格式错误")
+        return
 
     print("1. 饼图（分类占比）  2. 折线图（月度趋势）  3. 两者都生成")
     choice = input("请选择: ").strip()
@@ -272,4 +287,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\n再见！")
+    except Exception as e:
+        print(f"\n程序异常退出: {e}")
